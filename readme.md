@@ -7,10 +7,11 @@ Was tired of always wishing I had logging functionality. Now I have a consistent
 Design/Implementation was inspired by 
 https://www.drdobbs.com/cpp/logging-in-c/201804215?pgno=1
 
-Some changes were made.
-Use C++14 features like:
+Some changes from the original were made:
+- chrono for time information
 - scoped enum
 - atomics
 - c++ std::thread/mutex
+- Global namespace macro for each log level: `LOG_DEBUG << "my debug message;` vs `LOG(DEBUG) << "my debug message"`
 
 Added a CMakeLists to the project so it can be used in other CMake projects.
