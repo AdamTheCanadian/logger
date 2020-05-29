@@ -1,0 +1,3 @@
+/home/aclare/projects/logger/build/CMakeFiles/rebuild_cache.dir
+/home/aclare/projects/logger/build/CMakeFiles/edit_cache.dir
+/home/aclare/projects/logger/build/CMakeFiles/log_example.dir
