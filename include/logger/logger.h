@@ -12,10 +12,10 @@
 namespace logging {
 
 enum class LogLevel {
-  Debug = 0,
-  Info,
-  Warning,
   Error,
+  Warning,
+  Info,
+  Debug,
 };
 
 class LogMessage {
@@ -71,11 +71,9 @@ logging::LogMessage::LogMessage() {
 
 logging::LogMessage::~LogMessage() {
 
-  if (msg_level_ >= logging::LogMessage::LoggingLevel()) {
-    os << std::endl;
-    fprintf(stdout, "%s", os.str().c_str());
-    fflush(stdout);
-  }
+  os << std::endl;
+  fprintf(stdout, "%s", os.str().c_str());
+  fflush(stdout);
 }
 
 std::ostringstream& logging::LogMessage::Get(logging::LogLevel level) {
@@ -118,5 +116,27 @@ std::string logging::LogMessage::LevelToString(LogLevel level) {
     return "INFO";
   }
 }
+
+/* Macro for log messages. This is used so the check if the desired log 
+* level (level) is above the set logging level is now here, and not in
+* the destructor of the LogMessage object. AKA should be faster 
+* Example: LOG(LogLevel::Error) << "Error " << 123.45;
+* Expands to: 
+* if (LogLevel::Error > logging::LogMessage::LoggingLevel()) {
+*   // do nothing
+* }
+* else {
+* // (...) is the standard logging header: time + level
+*  ... << "Error " <<  123.45;
+* }
+*/
+#define LOG(level) \
+  if (level > logging::LogMessage::LoggingLevel()) ; \
+  else logging::LogMessage().Get(level)
+
+#define LOG_DEBUG LOG(logging::LogLevel::Debug) 
+#define LOG_INFO LOG(logging::LogLevel::Info) 
+#define LOG_WARNING LOG(logging::LogLevel::Warning) 
+#define LOG_ERROR LOG(logging::LogLevel::Error) 
 
 #endif
