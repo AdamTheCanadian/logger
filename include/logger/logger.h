@@ -18,6 +18,7 @@ enum class LogLevel {
   Debug,
 };
 
+template<typename T>
 class LogMessage {
 
 public:
@@ -63,20 +64,44 @@ private:
 
   LogLevel msg_level_;
 }; // end of class LogMessage
+
+/**
+ * @brief Class/policy for setting log messages to go to a file stream
+ * 
+ */
+class LogToFile {
+public:
+  /**
+   * @brief Get a reference to the current log stream source
+   * 
+   * By default stream source is set to stdout
+   * 
+   * Can be used to set the output stream source:
+   * LogToFile::LogStream = fopen("my_log_file.txt", "a");
+   * 
+   * @return FILE*& 
+   */
+  static FILE*& LogStream();
+
+  static void Output(const std::string& msg);
+}; // end of class LogToFile
+
 } // end of namespace logging
 
-logging::LogMessage::LogMessage() {
+template<typename T>
+logging::LogMessage<T>::LogMessage() {
 
 }
 
-logging::LogMessage::~LogMessage() {
+template<typename T>
+logging::LogMessage<T>::~LogMessage() {
 
   os << std::endl;
-  fprintf(stdout, "%s", os.str().c_str());
-  fflush(stdout);
+  T::Output(os.str());
 }
 
-std::ostringstream& logging::LogMessage::Get(logging::LogLevel level) {
+template<typename T>
+std::ostringstream& logging::LogMessage<T>::Get(logging::LogLevel level) {
 
   using namespace std::chrono;
   // Get the current time, needed for the log message
@@ -97,12 +122,14 @@ std::ostringstream& logging::LogMessage::Get(logging::LogLevel level) {
   return os;
 }
 
-logging::LogLevel& logging::LogMessage::LoggingLevel() {
+template<typename T>
+logging::LogLevel& logging::LogMessage<T>::LoggingLevel() {
   static logging::LogLevel level = logging::LogLevel::Debug;
   return level;
 }
 
-std::string logging::LogMessage::LevelToString(LogLevel level) {
+template<typename T>
+std::string logging::LogMessage<T>::LevelToString(LogLevel level) {
 
   switch(level) {
   case LogLevel::Error: return "ERROR";
@@ -116,6 +143,45 @@ std::string logging::LogMessage::LevelToString(LogLevel level) {
     return "INFO";
   }
 }
+
+inline FILE*& logging::LogToFile::LogStream() {
+  // Create the single instance of the stream, and by default go to stdout
+  static FILE* stream = stdout;
+  return stream;
+}
+
+inline void logging::LogToFile::Output(const std::string& msg) {
+
+  FILE* stream = logging::LogToFile::LogStream();
+  // If no stream return
+  if (!stream) {
+    return;
+  }
+
+  fprintf(stream, "%s", msg.c_str());
+  fflush(stream);
+}
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
+#   if defined (BUILDING_FILELOG_DLL)
+#       define FILELOG_DECLSPEC   __declspec (dllexport)
+#   elif defined (USING_FILELOG_DLL)
+#       define FILELOG_DECLSPEC   __declspec (dllimport)
+#   else
+#       define FILELOG_DECLSPEC
+#   endif // BUILDING_DBSIMPLE_DLL
+#else
+#   define FILELOG_DECLSPEC
+#endif // _WIN32
+
+// Create a single log class that implements the logging to file policy
+class FILELOG_DECLSPEC Log : public logging::LogMessage<logging::LogToFile> {};
+
+
+// Compile time macro that can be used to change the level of the logging
+#ifndef LOG_MAX_LEVEL
+#define LOG_MAX_LEVEL logging::LogLevel::Debug
+#endif
 
 /* Macro for log messages. This is used so the check if the desired log 
 * level (level) is above the set logging level is now here, and not in
@@ -131,8 +197,9 @@ std::string logging::LogMessage::LevelToString(LogLevel level) {
 * }
 */
 #define LOG(level) \
-  if (level > logging::LogMessage::LoggingLevel()) ; \
-  else logging::LogMessage().Get(level)
+  if (level > LOG_MAX_LEVEL) ;\
+  else if (level > Log::LoggingLevel() || !logging::LogToFile::LogStream()) ; \
+  else Log().Get(level)
 
 #define LOG_DEBUG LOG(logging::LogLevel::Debug) 
 #define LOG_INFO LOG(logging::LogLevel::Info) 
