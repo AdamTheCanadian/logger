@@ -113,8 +113,8 @@ std::ostringstream& logging::LogMessage<T>::Get(logging::LogLevel level) {
   // We want millisecond resolution in the log, so need to add the milli
   // seconds to the log. First put the decimal after the seconds, and 
   // want to always have three decimal places
-  os << "." << std::setfill('0') << std::setw(3);
-  os << (duration_cast<milliseconds>(now.time_since_epoch()) % 1000).count() << " ";
+  os << "." << std::setfill('0') << std::setw(6);
+  os << (duration_cast<microseconds>(now.time_since_epoch()) % 1000000).count() << " ";
   // Set a constant width between the end of the ': ' and the message. 12 was found
   // from trial and error
   os << LevelToString(level) << ": " << std::setfill(' ') << std::setw(12);
