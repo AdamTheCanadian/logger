@@ -11,3 +11,10 @@ add_executable(
   log_example
   main.cpp
   include/logger/logger.h)
+
+add_executable(
+  log_threading_example
+  log_threading_example.cpp
+  include/logger/logger.h)
+
+target_link_libraries(log_threading_example pthread)
