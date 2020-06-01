@@ -30,6 +30,12 @@ SOFTWARE.
 #include <iomanip>
 #include <ctime>
 #include <cstdint>
+#include <thread>
+#include <stdarg.h>
+#include <stdio.h>
+
+// macro for getting just filename not full path
+#define __FILENAME__ (__FILE__ + SOURCE_PATH_SIZE)
 
 namespace logging {
 
@@ -48,8 +54,21 @@ public:
   LogMessage();
 
   virtual ~LogMessage();
-
-  std::ostringstream& Get(LogLevel level = LogLevel::Info);
+  
+  /**
+   * @brief Get the actual log message
+   * 
+   * Adds the filename and line number to the log message
+   * 
+   * @param level 
+   * @param file 
+   * @param line 
+   * @return std::ostringstream& 
+   */
+  std::ostringstream& Get(
+    LogLevel level,
+    int line,
+    const char* file); 
 
   /**
    * @brief Returns a reference to the current logging level.
@@ -123,7 +142,10 @@ logging::LogMessage<T>::~LogMessage() {
 }
 
 template<typename T>
-std::ostringstream& logging::LogMessage<T>::Get(logging::LogLevel level) {
+std::ostringstream& logging::LogMessage<T>::Get(
+  logging::LogLevel level,
+  int line, 
+  const char* file) {
 
   using namespace std::chrono;
   // Get the current time, needed for the log message
@@ -136,10 +158,14 @@ std::ostringstream& logging::LogMessage<T>::Get(logging::LogLevel level) {
   // seconds to the log. First put the decimal after the seconds, and 
   // want to always have three decimal places
   os << "." << std::setfill('0') << std::setw(6);
-  os << (duration_cast<microseconds>(now.time_since_epoch()) % 1000000).count() << " ";
+  os << (duration_cast<microseconds>(now.time_since_epoch()) % 1000000).count();
+  
+  os << " " << std::setfill(' ') << std::setw(35) << std::left << file;
+  os << " " << std::setfill(' ') << std::setw(4) << std::left << line;
+  os << " " << std::setfill(' ') << std::setw(10) << std::left << std::this_thread::get_id();
   // Set a constant width between the end of the ': ' and the message. 12 was found
   // from trial and error
-  os << LevelToString(level) << ": " << std::setfill(' ') << std::setw(12);
+  os << " " << LevelToString(level) << ": " << std::setfill(' ') << std::setw(12);
   msg_level_ = level;
   return os;
 }
@@ -161,7 +187,7 @@ std::string logging::LogMessage<T>::LevelToString(LogLevel level) {
   // Default case should only happen if a new logging level was added, and
   // the case was not added in this function
   default: 
-    LogMessage().Get(LogLevel::Info) << "Unknown logging level. Resorting to INFO level";
+    LogMessage().Get(LogLevel::Info, __LINE__, __FILENAME__) << "Unknown logging level. Resorting to INFO level";
     return "INFO";
   }
 }
@@ -218,14 +244,14 @@ class FILELOG_DECLSPEC Log : public logging::LogMessage<logging::LogToFile> {};
 *  ... << "Error " <<  123.45;
 * }
 */
-#define LOG(level) \
+#define LOG(level, __LINE__, __FILENAME__) \
   if (level > LOG_MAX_LEVEL) ;\
   else if (level > Log::LoggingLevel() || !logging::LogToFile::LogStream()) ; \
-  else Log().Get(level)
+  else Log().Get(level, __LINE__, __FILENAME__)
 
-#define LOG_DEBUG LOG(logging::LogLevel::Debug) 
-#define LOG_INFO LOG(logging::LogLevel::Info) 
-#define LOG_WARNING LOG(logging::LogLevel::Warning) 
-#define LOG_ERROR LOG(logging::LogLevel::Error) 
+#define LOG_DEBUG LOG(logging::LogLevel::Debug, __LINE__, __FILENAME__) 
+#define LOG_INFO LOG(logging::LogLevel::Info, __LINE__, __FILENAME__) 
+#define LOG_WARNING LOG(logging::LogLevel::Warning, __LINE__, __FILENAME__)  
+#define LOG_ERROR LOG(logging::LogLevel::Error, __LINE__, __FILENAME__) 
 
 #endif
