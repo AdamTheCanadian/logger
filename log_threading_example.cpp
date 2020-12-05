@@ -19,7 +19,7 @@ int main() {
   // Set the logging level of our application to INFO
   Log::LoggingLevel() = logging::LogLevel::Info;
   // Set the output to go to a file
-  // logging::LogToFile::LogStream() = fopen("example_log.txt", "w");
+  logging::LogToFile::LogStream() = fopen("example_log.txt", "w");
   
   // Want to measure the elapsed time, so start the timer before threads
   auto start = std::chrono::high_resolution_clock::now();
