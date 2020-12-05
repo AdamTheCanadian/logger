@@ -33,9 +33,10 @@ SOFTWARE.
 #include <thread>
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 
 // macro for getting just filename not full path
-#define __FILENAME__ (__FILE__ + SOURCE_PATH_SIZE)
+#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
 namespace logging {
 
@@ -103,7 +104,6 @@ private:
   // does not make sense)
   LogMessage& operator = (const LogMessage&);
 
-  LogLevel msg_level_;
 }; // end of class LogMessage
 
 /**
@@ -149,24 +149,23 @@ std::ostringstream& logging::LogMessage<T>::Get(
 
   using namespace std::chrono;
   // Get the current time, needed for the log message
-  auto now = high_resolution_clock::now();
-  auto now_t = high_resolution_clock::to_time_t(now);
+  auto now = system_clock::now();
+  auto now_t = system_clock::to_time_t(now);
 
   // Put the year/month/day hour:min:sec
-  os << std::put_time(std::localtime(&now_t), "%x %T");
-  // We want millisecond resolution in the log, so need to add the milli
-  // seconds to the log. First put the decimal after the seconds, and 
-  // want to always have three decimal places
-  os << "." << std::setfill('0') << std::setw(6);
-  os << (duration_cast<microseconds>(now.time_since_epoch()) % 1000000).count();
-  
-  os << " " << std::setfill(' ') << std::setw(35) << std::left << file;
-  os << " " << std::setfill(' ') << std::setw(4) << std::left << line;
-  os << " " << std::setfill(' ') << std::setw(10) << std::left << std::this_thread::get_id();
-  // Set a constant width between the end of the ': ' and the message. 12 was found
-  // from trial and error
-  os << " " << LevelToString(level) << ": " << std::setfill(' ') << std::setw(12);
-  msg_level_ = level;
+  os << std::put_time(std::localtime(&now_t), "%x %T") <<
+    // We want millisecond resolution in the log, so need to add the milli
+    // seconds to the log. First put the decimal after the seconds, and 
+    // want to always have three decimal places
+    "." << std::setfill('0') << std::setw(3) << 
+    (duration_cast<milliseconds>(now.time_since_epoch()) % 1000).count() << 
+    // Log file, line, and thread number
+    " " << std::setfill(' ') << std::setw(35) << std::left << file << 
+    " " << std::setfill(' ') << std::setw(4) << std::left << line << 
+    " " << std::setfill(' ') << std::setw(10) << std::left << std::this_thread::get_id() <<
+    // Set a constant width between the end of the ': ' and the message. 12 was found
+    // from trial and error
+    " " << LevelToString(level) << ": " << std::setfill(' ') << std::setw(12);
   return os;
 }
 

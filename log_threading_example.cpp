@@ -2,9 +2,11 @@
 #include <thread>
 #include <iostream>
 
+static const std::uint64_t num_iters = 1000;
+static const std::uint16_t num_threads = 10;
+
 void LogLoop() {
 
-  static const std::uint64_t num_iters = 1000000;
   for (std::uint64_t i = 0; i < num_iters; i++) {
     LOG_ERROR << "Thread: " << std::this_thread::get_id() << " on count " << i;
     // These messages should not appear since the logging level was set to info
@@ -34,7 +36,7 @@ int main() {
 
   auto end = std::chrono::high_resolution_clock::now();
 
-  std::cout << "Total time (ms): " << 
+  std::cout << "Total time to log " << num_iters << " msgs on each " << num_threads << " threads (ms): " << 
     std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << 
     std::endl;
 
