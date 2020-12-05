@@ -137,7 +137,7 @@ logging::LogMessage<T>::LogMessage() {
 template<typename T>
 logging::LogMessage<T>::~LogMessage() {
 
-  os << std::endl;
+  os << "\n";
   T::Output(os.str());
 }
 
@@ -206,7 +206,8 @@ inline void logging::LogToFile::Output(const std::string& msg) {
   }
 
   fprintf(stream, "%s", msg.c_str());
-  fflush(stream);
+  /* TODO: Figure out why flushing signficantly slows the logger */
+  // fflush(stream);
 }
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
